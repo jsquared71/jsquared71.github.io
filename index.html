@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conway's Game of Life</title>
+    <style>
+        canvas {
+            border: 1px solid black;
+            background-color: #f0f0f0;
+        }
+        #controls {
+            margin-top: 10px;
+        }
+        button {
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Conway's Game of Life</h1>
+<canvas id="gameCanvas" width="600" height="600"></canvas>
+<div id="controls">
+    <button onclick="toggleSimulation()">Start / Stop</button>
+    <button onclick="clearGrid()">Clear</button>
+    <button onclick="randomizeGrid()">Randomize</button>
+</div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const resolution = 20; // Size of each cell
+    const COLS = canvas.width / resolution;
+    const ROWS = canvas.height / resolution;
+
+    let grid = createGrid();
+    let running = false;
+
+    // Initialize an empty grid
+    function createGrid() {
+        return new Array(COLS).fill(null)
+            .map(() => new Array(ROWS).fill(0));
+    }
+
+    // Randomize the grid with alive (1) or dead (0) cells
+    function randomizeGrid() {
+        grid = grid.map(col => col.map(() => Math.random() > 0.7 ? 1 : 0));
+        drawGrid();
+    }
+
+    // Clear the grid (make all cells dead)
+    function clearGrid() {
+        grid = createGrid();
+        drawGrid();
+    }
+
+    // Toggle the simulation on or off
+    function toggleSimulation() {
+        running = !running;
+        if (running) {
+            update();
+        }
+    }
+
+    // Draw the grid based on the current cell states
+    function drawGrid() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        for (let x = 0; x < COLS; x++) {
+            for (let y = 0; y < ROWS; y++) {
+                ctx.beginPath();
+                ctx.rect(x * resolution, y * resolution, resolution, resolution);
+                ctx.fillStyle = grid[x][y] ? 'black' : 'white';
+                ctx.fill();
+                ctx.stroke();
+            }
+        }
+    }
+
+    // Calculate the next generation
+    function nextGeneration(grid) {
+        const newGrid = createGrid();
+
+        for (let x = 0; x < COLS; x++) {
+            for (let y = 0; y < ROWS; y++) {
+                const neighbors = countNeighbors(grid, x, y);
+                const cell = grid[x][y];
+
+                // Apply Conway's Game of Life rules
+                if (cell === 1 && (neighbors < 2 || neighbors > 3)) {
+                    newGrid[x][y] = 0; // Cell dies
+                } else if (cell === 0 && neighbors === 3) {
+                    newGrid[x][y] = 1; // Cell becomes alive
+                } else {
+                    newGrid[x][y] = cell; // Remain in the same state
+                }
+            }
+        }
+        return newGrid;
+    }
+
+    // Count alive neighbors around a specific cell
+    function countNeighbors(grid, x, y) {
+        let sum = 0;
+        for (let i = -1; i <= 1; i++) {
+            for (let j = -1; j <= 1; j++) {
+                if (i === 0 && j === 0) continue; // Skip the cell itself
+                const col = (x + i + COLS) % COLS;
+                const row = (y + j + ROWS) % ROWS;
+                sum += grid[col][row];
+            }
+        }
+        return sum;
+    }
+
+    // Update the game state and draw the new generation
+    function update() {
+        grid = nextGeneration(grid);
+        drawGrid();
+        if (running) {
+            requestAnimationFrame(update);
+        }
+    }
+
+    // Allow user to toggle cells by clicking
+    canvas.addEventListener('click', event => {
+        const x = Math.floor(event.offsetX / resolution);
+        const y = Math.floor(event.offsetY / resolution);
+        grid[x][y] = grid[x][y] ? 0 : 1;
+        drawGrid();
+    });
+
+    drawGrid();
+</script>
+
+</body>
+</html>
